@@ -677,7 +677,23 @@ class Exchange:
 
     async def _api_reload_markets(self, reload: bool = False) -> None:
         try:
-            await self._api_async.load_markets(reload=reload, params={})
+            # Workaround for Bybit Demo Trading: load_markets calls
+            # fetch_currencies via a private endpoint (privateGetV5AssetCoinQueryInfo)
+            # that the demo API rejects with "Demo trading are not supported".
+            # Temporarily disable fetchCurrencies during market loading when
+            # demo trading URLs are detected, then restore it.
+            orig_fetch_currencies = None
+            api_urls = getattr(self._api_async, 'urls', {}).get('api', {})
+            if isinstance(api_urls, dict):
+                private_url = api_urls.get('private', '')
+                if 'api-demo' in str(private_url):
+                    orig_fetch_currencies = self._api_async.has.get('fetchCurrencies')
+                    self._api_async.has['fetchCurrencies'] = False
+            try:
+                await self._api_async.load_markets(reload=reload, params={})
+            finally:
+                if orig_fetch_currencies is not None:
+                    self._api_async.has['fetchCurrencies'] = orig_fetch_currencies
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:

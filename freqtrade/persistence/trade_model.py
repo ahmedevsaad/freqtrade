@@ -2006,10 +2006,10 @@ class Trade(ModelBase, LocalTrade):
         return [
             {
                 "pair": pair,
-                "profit_ratio": profit,
-                "profit": round(profit * 100, 2),  # Compatibility mode
-                "profit_pct": round(profit * 100, 2),
-                "profit_abs": profit_abs,
+                "profit_ratio": profit or 0,
+                "profit": round((profit or 0) * 100, 2),  # Compatibility mode
+                "profit_pct": round((profit or 0) * 100, 2),
+                "profit_abs": profit_abs or 0,
                 "count": count,
             }
             for pair, profit, profit_abs, count in pair_rates
